@@ -17,7 +17,7 @@ public class PlayerMovement : MonoBehaviour
     {
         Run();
 
-        if (Input.GetButtonDown("Jump") && pa.onGround && !pa.isJumping)
+        if (Input.GetKeyDown(KeyCode.W) && pa.onGround && !pa.isJumping)
         {
             StartCoroutine(Jump());
         }
