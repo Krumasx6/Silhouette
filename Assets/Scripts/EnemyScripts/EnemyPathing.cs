@@ -15,7 +15,7 @@ public class EnemyPathing : MonoBehaviour
         currentTarget = pointB.position;
     }
     void Update()
-    {
+    {   
         MoveEnemy();
     }
     void MoveEnemy()
@@ -34,6 +34,6 @@ public class EnemyPathing : MonoBehaviour
             movingToB = !movingToB;
         }
     }
-    
+
 
 }
