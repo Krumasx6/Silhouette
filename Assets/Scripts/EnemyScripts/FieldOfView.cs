@@ -22,17 +22,33 @@ public class FieldOfView : MonoBehaviour
     {
         visiblePlayer.Clear();
         playerInSight = false;
-        
-        Vector2 eyePosition = new Vector2(transform.position.x, transform.position.y + eyeOffset);
+
+        Vector2 eyePosition = (Vector2)transform.position + (Vector2)transform.right * 0.4f + new Vector2(0, eyeOffset);
+
+        float proximityRadius = 0.8f;
+        Collider2D closeHit = Physics2D.OverlapCircle(eyePosition, proximityRadius, playerMask);
+        if (closeHit != null)
+        {
+            playerInSight = true;
+            visiblePlayer.Add(closeHit.transform);
+            return; // Exit early, no need to run the cone logic
+        }
         
         playerInRadius = Physics2D.OverlapCircleAll(eyePosition, viewRadius, playerMask);
         for (int i = 0; i < playerInRadius.Length; i++)
         {
             Transform player = playerInRadius[i].transform;
+
+            if (Vector2.Distance(player.position, eyePosition) < 0.7f)
+            {
+                playerInSight = true;
+                visiblePlayer.Add(player);
+                continue; // Skip to next player, already detected
+            }
             
             // Check if player is within view angle
             Vector2 dirToCenter = new Vector2(player.position.x - eyePosition.x, player.position.y - eyePosition.y);
-            if (Vector2.Angle(dirToCenter, transform.right) < viewAngle / 2)
+           if (Vector2.Angle(dirToCenter, transform.right) < (viewAngle / 2) + 5f)
             {
                 // Get player's collider bounds
                 Collider2D playerCollider = playerInRadius[i];
@@ -45,17 +61,17 @@ public class FieldOfView : MonoBehaviour
                 // Add center point
                 checkPoints.Add(player.position);
                 
-                // Add edge points (left, right, top, bottom)
-                checkPoints.Add(new Vector2(bounds.min.x, player.position.y)); // Left
-                checkPoints.Add(new Vector2(bounds.max.x, player.position.y)); // Right
-                checkPoints.Add(new Vector2(player.position.x, bounds.max.y)); // Top
-                checkPoints.Add(new Vector2(player.position.x, bounds.min.y)); // Bottom
-                
-                // Add corner points for better detection
-                checkPoints.Add(new Vector2(bounds.min.x, bounds.min.y)); // Bottom-left
-                checkPoints.Add(new Vector2(bounds.max.x, bounds.min.y)); // Bottom-right
-                checkPoints.Add(new Vector2(bounds.min.x, bounds.max.y)); // Top-left
-                checkPoints.Add(new Vector2(bounds.max.x, bounds.max.y)); // Top-right
+                int resolution = 3; // or 4 for denser coverage
+                for (int x = 0; x < resolution; x++)
+                {
+                    for (int y = 0; y < resolution; y++)
+                    {
+                        float px = Mathf.Lerp(bounds.min.x, bounds.max.x, (float)x / (resolution - 1));
+                        float py = Mathf.Lerp(bounds.min.y, bounds.max.y, (float)y / (resolution - 1));
+                        checkPoints.Add(new Vector2(px, py));
+                    }
+                }
+
                 
                 // Check if any point is visible
                 foreach (Vector2 point in checkPoints)

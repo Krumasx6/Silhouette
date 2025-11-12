@@ -6,7 +6,7 @@ public class FieldOfViewMesh : MonoBehaviour
 {
     FieldOfView fov;
     Mesh mesh;
-    RaycastHit2D hit;
+    RaycastHit2D hit;   
     [SerializeField] float meshRes = 2;
     [HideInInspector] public Vector3[] vertices;
     [HideInInspector] public int[] triangles;
