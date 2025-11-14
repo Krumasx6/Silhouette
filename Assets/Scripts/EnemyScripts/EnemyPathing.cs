@@ -25,6 +25,8 @@ public class EnemyPathing : MonoBehaviour
         {
             if (movingToB)
             {
+
+                
                 currentTarget = pointA.position;
             }
             else
