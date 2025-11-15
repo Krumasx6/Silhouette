@@ -4,6 +4,9 @@ public class PlayerMovement : MonoBehaviour
 {
     private PlayerAttributes attr;
     private Rigidbody2D rb;
+    [SerializeField] private GameObject playerSoundObject;
+    private bool playingFootsteps = false;
+    public float footstepSpeed = 0.5f;
     
     private void Start()
     {
@@ -43,6 +46,15 @@ public class PlayerMovement : MonoBehaviour
         
         // Check if player wants to run (Left Shift)
         attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && attr.moveInput.magnitude > 0;
+
+        if (rb.linearVelocity.magnitude > 0 && !playingFootsteps)
+        {   
+            StartFootsteps();
+        }
+        else if (rb.linearVelocity.magnitude < 0.01f && playingFootsteps)
+        {
+            StopFootsteps();
+        }
     }
     
     private void HandleMovement()
@@ -50,6 +62,7 @@ public class PlayerMovement : MonoBehaviour
         float currentSpeed = attr.isRunning ? attr.runSpeed : attr.walkSpeed;
         Vector2 velocity = attr.moveInput * currentSpeed;
         rb.linearVelocity = velocity;
+
     }
     
     private void HandleStamina()
@@ -57,12 +70,15 @@ public class PlayerMovement : MonoBehaviour
         if (attr.isRunning)
         {
             // Drain stamina while running
+            playerSoundObject.SetActive(true);
             attr.currentStamina -= attr.staminaDrainRate * Time.deltaTime;
             attr.currentStamina = Mathf.Max(0, attr.currentStamina);
             attr.staminaRegenTimer = attr.staminaRegenDelay;
         }
         else if (attr.currentStamina < attr.maxStamina)
         {
+            
+            playerSoundObject.SetActive(false);
             // Regenerate stamina after delay
             if (attr.staminaRegenTimer > 0)
             {
@@ -139,5 +155,27 @@ public class PlayerMovement : MonoBehaviour
         float distance = Vector3.Distance(transform.position, listenerPosition);
         return distance <= attr.breathingHearRadius;
     }
+
+    void PlayBackgroundMusic()
+    {
+        SoundEffectManager.Play("BackgroundMusic");
+    }
     
+    // ===== Footstep Sound Management =====
+    void StartFootsteps()
+    {
+        playingFootsteps = true;
+        InvokeRepeating(nameof(PlayFootstep), 0f, footstepSpeed);
+    }
+
+    void StopFootsteps()
+    {
+        playingFootsteps = false;
+        CancelInvoke(nameof(PlayFootstep));
+    } 
+
+    void PlayFootstep()
+    {
+        SoundEffectManager.Play("Footstep");
+    }
 }
