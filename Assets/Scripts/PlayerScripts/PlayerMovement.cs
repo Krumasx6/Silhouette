@@ -5,8 +5,9 @@ public class PlayerMovement : MonoBehaviour
     private PlayerAttributes attr;
     private Rigidbody2D rb;
     [SerializeField] private GameObject playerSoundObject;
+    [SerializeField] private float footstepSpeed = 0.5f;
     private bool playingFootsteps = false;
-    public float footstepSpeed = 0.5f;
+    private float footstepTimer = 0f;
     
     private void Start()
     {
@@ -29,6 +30,8 @@ public class PlayerMovement : MonoBehaviour
         HandleInput();
         HandleStamina();
         HandleBreathing();
+        HandleFootsteps();
+        Flip();
     }
     
     private void FixedUpdate()
@@ -46,15 +49,6 @@ public class PlayerMovement : MonoBehaviour
         
         // Check if player wants to run (Left Shift)
         attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && attr.moveInput.magnitude > 0;
-
-        if (rb.linearVelocity.magnitude > 0 && !playingFootsteps)
-        {   
-            StartFootsteps();
-        }
-        else if (rb.linearVelocity.magnitude < 0.01f && playingFootsteps)
-        {
-            StopFootsteps();
-        }
     }
     
     private void HandleMovement()
@@ -62,7 +56,6 @@ public class PlayerMovement : MonoBehaviour
         float currentSpeed = attr.isRunning ? attr.runSpeed : attr.walkSpeed;
         Vector2 velocity = attr.moveInput * currentSpeed;
         rb.linearVelocity = velocity;
-
     }
     
     private void HandleStamina()
@@ -70,15 +63,20 @@ public class PlayerMovement : MonoBehaviour
         if (attr.isRunning)
         {
             // Drain stamina while running
-            playerSoundObject.SetActive(true);
+            if (playerSoundObject != null)
+            {
+                playerSoundObject.SetActive(true);
+            }
             attr.currentStamina -= attr.staminaDrainRate * Time.deltaTime;
             attr.currentStamina = Mathf.Max(0, attr.currentStamina);
             attr.staminaRegenTimer = attr.staminaRegenDelay;
         }
         else if (attr.currentStamina < attr.maxStamina)
         {
-            
-            playerSoundObject.SetActive(false);
+            if (playerSoundObject != null)
+            {
+                playerSoundObject.SetActive(false);
+            }
             // Regenerate stamina after delay
             if (attr.staminaRegenTimer > 0)
             {
@@ -131,6 +129,71 @@ public class PlayerMovement : MonoBehaviour
         attr.breathingAudioSource.Stop();
     }
     
+    private void Flip()
+    {
+        bool playerHasHorizontalSpeed = Mathf.Abs(rb.linearVelocity.x) > Mathf.Epsilon;
+        if (playerHasHorizontalSpeed)
+        {
+            transform.localScale = new Vector2(Mathf.Sign(rb.linearVelocity.x), 1f);
+            
+            if (transform.localScale.x == 1)
+            {
+                attr.isFacingRight = true;
+            }
+            else if (transform.localScale.x == -1)
+            {
+                attr.isFacingRight = false;
+            }
+        }
+    }
+    
+    // ===== Footstep Sound Management =====
+    private void HandleFootsteps()
+    {
+        bool isMoving = rb.linearVelocity.magnitude > 0.1f;
+        
+        if (isMoving)
+        {
+            if (!playingFootsteps)
+            {
+                // Just started moving - play immediately
+                PlayFootstep();
+                float currentFootstepSpeed = attr.isRunning ? footstepSpeed * 0.6f : footstepSpeed;
+                footstepTimer = currentFootstepSpeed;
+                playingFootsteps = true;
+            }
+            else
+            {
+                // Continue moving - countdown timer
+                footstepTimer -= Time.deltaTime;
+                
+                if (footstepTimer <= 0f)
+                {
+                    PlayFootstep();
+                    // Adjust footstep speed based on running
+                    float currentFootstepSpeed = attr.isRunning ? footstepSpeed * 0.6f : footstepSpeed;
+                    footstepTimer = currentFootstepSpeed;
+                }
+            }
+        }
+        else
+        {
+            // Player stopped moving - reset
+            playingFootsteps = false;
+            footstepTimer = 0f;
+        }
+    }
+
+    private void PlayFootstep()
+    {
+        SoundEffectManager.Play("Footstep");
+    }
+    
+    void PlayBackgroundMusic()
+    {
+        SoundEffectManager.Play("BackgroundMusic");
+    }
+    
     // Public methods for UI or other systems
     public float GetStaminaPercentage()
     {
@@ -154,28 +217,5 @@ public class PlayerMovement : MonoBehaviour
         
         float distance = Vector3.Distance(transform.position, listenerPosition);
         return distance <= attr.breathingHearRadius;
-    }
-
-    void PlayBackgroundMusic()
-    {
-        SoundEffectManager.Play("BackgroundMusic");
-    }
-    
-    // ===== Footstep Sound Management =====
-    void StartFootsteps()
-    {
-        playingFootsteps = true;
-        InvokeRepeating(nameof(PlayFootstep), 0f, footstepSpeed);
-    }
-
-    void StopFootsteps()
-    {
-        playingFootsteps = false;
-        CancelInvoke(nameof(PlayFootstep));
-    } 
-
-    void PlayFootstep()
-    {
-        SoundEffectManager.Play("Footstep");
     }
 }

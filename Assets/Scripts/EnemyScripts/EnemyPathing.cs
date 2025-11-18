@@ -1,41 +1,22 @@
 using UnityEngine;
+using UnityEngine.AI;
 
 public class EnemyPathing : MonoBehaviour
 {
-    [SerializeField] private GameObject enemy;
-    [SerializeField] private Transform pointA;
-    [SerializeField] private Transform pointB;
+    [SerializeField] private Transform target;
 
-    private Vector3 currentTarget;
-    private float speed = 2f;
-    private float reachThreshold = 0.1f;
-    private bool movingToB = true;
-    void Start()
+    NavMeshAgent agent;
+
+    private void Start()
     {
-        currentTarget = pointB.position;
+        agent = GetComponent<NavMeshAgent>();
+        agent.updateRotation = false;
+        agent.updateUpAxis = false;
     }
-    void Update()
-    {   
-        MoveEnemy();
-    }
-    void MoveEnemy()
+
+    private void Update()
     {
-        enemy.transform.position = Vector3.MoveTowards(enemy.transform.position, currentTarget, speed * Time.deltaTime);
-        if (Vector3.Distance(enemy.transform.position, currentTarget) < reachThreshold)
-        {
-            if (movingToB)
-            {
-
-                
-                currentTarget = pointA.position;
-            }
-            else
-            {
-                currentTarget = pointB.position;
-            }
-            movingToB = !movingToB;
-        }
+        agent.SetDestination(target.position);
     }
-
 
 }
