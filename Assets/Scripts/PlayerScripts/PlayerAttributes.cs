@@ -18,19 +18,6 @@ public class PlayerAttributes : MonoBehaviour
     public float walkSpeed = 5f;
     [Tooltip("Running speed in units per second")]
     public float runSpeed = 8f;
-
-    // ========== MOVEMENT PHYSICS ==========
-    [Header("Movement Physics")]
-    [Tooltip("Default gravity scale")]
-    public float defaultGravity = 5f;
-    [Tooltip("Acceleration when on ground (units/s²)")]
-    public float groundAcceleration = 60f;
-    [Tooltip("Deceleration (friction) when on ground (units/s²)")]
-    public float groundDeceleration = 80f;
-    [Tooltip("Acceleration while in air (lower for less air control)")]
-    public float airAcceleration = 20f;
-    [Tooltip("Deceleration while in air")]
-    public float airDeceleration = 20f;
     
     // ========== STAMINA SYSTEM ==========
     [Header("Stamina")]

@@ -66,6 +66,7 @@ public class PlayerMovement : MonoBehaviour
             if (playerSoundObject != null)
             {
                 playerSoundObject.SetActive(true);
+
             }
             attr.currentStamina -= attr.staminaDrainRate * Time.deltaTime;
             attr.currentStamina = Mathf.Max(0, attr.currentStamina);
