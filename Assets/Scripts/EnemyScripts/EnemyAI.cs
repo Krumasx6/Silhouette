@@ -5,19 +5,13 @@ public class EnemyAI : MonoBehaviour
 {
     [SerializeField] private Transform[] patrolPoints;
     [SerializeField] private float patrolWaitTime = 2f;
-    
-    // Sight settings
-    [SerializeField] private float sightRange = 5f;
-    [SerializeField] private float sightAngle = 60f;
-    [SerializeField] private Transform sightOrigin;
-    
-    // Chase settings
     [SerializeField] private float loseTrackTime = 6f;
     
     private enum GuardState { Patrolling, Investigating, Chasing }
     private GuardState currentState = GuardState.Patrolling;
     
     private NavMeshAgent agent;
+    private FieldOfView fieldOfView;
     private int currentPatrolIndex = 0;
     private float patrolWaitCounter = 0f;
     private Vector3 soundInvestigationPoint;
@@ -30,6 +24,8 @@ public class EnemyAI : MonoBehaviour
         agent.updateRotation = false;
         agent.updateUpAxis = false;
         
+        fieldOfView = GetComponent<FieldOfView>();
+        
         if (patrolPoints.Length > 0)
             GoToNextPatrolPoint();
     }
@@ -37,11 +33,12 @@ public class EnemyAI : MonoBehaviour
     private void Update()
     {
         // Always check for player sight first (highest priority)
-        if (CanSeePlayer(out Transform player))
+        if (fieldOfView != null && fieldOfView.playerInSight && fieldOfView.visiblePlayer.Count > 0)
         {
-            playerTarget = player;
+            playerTarget = fieldOfView.visiblePlayer[0];
             currentState = GuardState.Chasing;
             loseTrackCounter = 0f;
+            HandleChasing();
             return;
         }
         
@@ -119,6 +116,7 @@ public class EnemyAI : MonoBehaviour
         if (playerTarget == null)
         {
             currentState = GuardState.Patrolling;
+            GoToNextPatrolPoint();
             return;
         }
         
@@ -134,32 +132,6 @@ public class EnemyAI : MonoBehaviour
             patrolWaitCounter = 0f;
             GoToNextPatrolPoint();
         }
-    }
-    
-    private bool CanSeePlayer(out Transform player)
-    {
-        player = null;
-        
-        // Find all objects in sight range
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(sightOrigin.position, sightRange);
-        
-        foreach (Collider2D col in colliders)
-        {
-            if (col.CompareTag("Player"))
-            {
-                // Check if player is in cone
-                Vector3 dirToPlayer = (col.transform.position - sightOrigin.position).normalized;
-                float angleToPlayer = Vector3.Angle(sightOrigin.right, dirToPlayer);
-                
-                if (angleToPlayer < sightAngle / 2f)
-                {
-                    player = col.transform;
-                    return true;
-                }
-            }
-        }
-        
-        return false;
     }
     
     // Call this from EnemyListener when sound is detected
@@ -179,27 +151,6 @@ public class EnemyAI : MonoBehaviour
         if (patrolPoints.Length > 0)
         {
             agent.SetDestination(patrolPoints[currentPatrolIndex].position);
-        }
-    }
-    
-    private void OnDrawGizmosSelected()
-    {
-        // Draw sight cone
-        if (sightOrigin != null)
-        {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(sightOrigin.position, sightRange);
-        }
-        
-        // Draw patrol points
-        Gizmos.color = Color.green;
-        if (patrolPoints != null)
-        {
-            foreach (Transform point in patrolPoints)
-            {
-                if (point != null)
-                    Gizmos.DrawWireSphere(point.position, 0.3f);
-            }
         }
     }
 }
