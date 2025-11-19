@@ -1,16 +1,16 @@
 using UnityEngine;
-using UnityEngine.AI;
 
 public class EnemyAI : MonoBehaviour
 {
     [SerializeField] private Transform[] patrolPoints;
     [SerializeField] private float patrolWaitTime = 2f;
     [SerializeField] private float loseTrackTime = 6f;
+    [SerializeField] private float stoppingDistance = 0.5f;
     
-    private enum GuardState { Patrolling, Investigating, Chasing }
-    private GuardState currentState = GuardState.Patrolling;
+    private enum EnemyState { Patrolling, Investigating, Chasing }
+    private EnemyState currentState = EnemyState.Patrolling;
     
-    private NavMeshAgent agent;
+    private EnemyPathing enemyPathing;
     private FieldOfView fieldOfView;
     private int currentPatrolIndex = 0;
     private float patrolWaitCounter = 0f;
@@ -20,38 +20,47 @@ public class EnemyAI : MonoBehaviour
     
     private void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
-        agent.updateRotation = false;
-        agent.updateUpAxis = false;
-        
+        enemyPathing = GetComponent<EnemyPathing>();
         fieldOfView = GetComponent<FieldOfView>();
         
         if (patrolPoints.Length > 0)
-            GoToNextPatrolPoint();
+        {
+            SetTarget(patrolPoints[currentPatrolIndex]);
+        }
     }
     
     private void Update()
     {
-        // Always check for player sight first (highest priority)
+        FaceDirection();
+        
+        // Always check for player sight first
         if (fieldOfView != null && fieldOfView.playerInSight && fieldOfView.visiblePlayer.Count > 0)
         {
             playerTarget = fieldOfView.visiblePlayer[0];
-            currentState = GuardState.Chasing;
+            SetTarget(playerTarget);
+            currentState = EnemyState.Chasing;
             loseTrackCounter = 0f;
-            HandleChasing();
             return;
+        }
+        else
+        {
+            // Player lost from sight
+            if (currentState == EnemyState.Chasing)
+            {
+                playerTarget = null;
+            }
         }
         
         // Handle current state
         switch (currentState)
         {
-            case GuardState.Patrolling:
+            case EnemyState.Patrolling:
                 HandlePatrolling();
                 break;
-            case GuardState.Investigating:
+            case EnemyState.Investigating:
                 HandleInvestigating();
                 break;
-            case GuardState.Chasing:
+            case EnemyState.Chasing:
                 HandleChasing();
                 break;
         }
@@ -62,18 +71,11 @@ public class EnemyAI : MonoBehaviour
         if (patrolPoints.Length == 0)
             return;
         
-        Transform currentPoint = patrolPoints[currentPatrolIndex];
-        float distToPoint = Vector3.Distance(transform.position, currentPoint.position);
+        float distToPoint = Vector3.Distance(transform.position, patrolPoints[currentPatrolIndex].position);
         
-        if (distToPoint > 0.5f)
+        // Check if reached patrol point
+        if (distToPoint <= stoppingDistance)
         {
-            // Move toward patrol point
-            agent.SetDestination(currentPoint.position);
-        }
-        else
-        {
-            // Reached patrol point, wait
-            agent.velocity = Vector3.zero;
             patrolWaitCounter += Time.deltaTime;
             
             if (patrolWaitCounter >= patrolWaitTime)
@@ -81,7 +83,7 @@ public class EnemyAI : MonoBehaviour
                 // Move to next patrol point
                 currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
                 patrolWaitCounter = 0f;
-                GoToNextPatrolPoint();
+                SetTarget(patrolPoints[currentPatrolIndex]);
             }
         }
     }
@@ -90,24 +92,24 @@ public class EnemyAI : MonoBehaviour
     {
         float distToSound = Vector3.Distance(transform.position, soundInvestigationPoint);
         
-        if (distToSound > 0.5f)
+        // Check if reached sound location
+        if (distToSound <= stoppingDistance)
         {
-            // Move toward sound source
-            agent.SetDestination(soundInvestigationPoint);
+            // Reached sound source, wait and listen
+            loseTrackCounter += Time.deltaTime;
         }
         else
         {
-            // Reached sound source, wait and listen
-            agent.velocity = Vector3.zero;
+            // Still moving to sound location
+            loseTrackCounter += Time.deltaTime;
         }
         
-        // Lose track timer
-        loseTrackCounter += Time.deltaTime;
+        // Give up searching
         if (loseTrackCounter >= loseTrackTime)
         {
-            currentState = GuardState.Patrolling;
+            currentState = EnemyState.Patrolling;
             patrolWaitCounter = 0f;
-            GoToNextPatrolPoint();
+            SetTarget(patrolPoints[currentPatrolIndex]);
         }
     }
     
@@ -115,22 +117,19 @@ public class EnemyAI : MonoBehaviour
     {
         if (playerTarget == null)
         {
-            currentState = GuardState.Patrolling;
-            GoToNextPatrolPoint();
+            currentState = EnemyState.Patrolling;
+            SetTarget(patrolPoints[currentPatrolIndex]);
             return;
         }
-        
-        // Chase the player
-        agent.SetDestination(playerTarget.position);
         
         // Lose track timer
         loseTrackCounter += Time.deltaTime;
         if (loseTrackCounter >= loseTrackTime)
         {
             playerTarget = null;
-            currentState = GuardState.Patrolling;
+            currentState = EnemyState.Patrolling;
             patrolWaitCounter = 0f;
-            GoToNextPatrolPoint();
+            SetTarget(patrolPoints[currentPatrolIndex]);
         }
     }
     
@@ -138,19 +137,36 @@ public class EnemyAI : MonoBehaviour
     public void OnPlayerSoundDetected(Vector3 soundPosition)
     {
         // Only switch to investigating if not already chasing
-        if (currentState != GuardState.Chasing)
+        if (currentState != EnemyState.Chasing)
         {
             soundInvestigationPoint = soundPosition;
-            currentState = GuardState.Investigating;
+            currentState = EnemyState.Investigating;
             loseTrackCounter = 0f;
+            SetTarget(new GameObject("SoundPoint").transform);
+            enemyPathing.GetComponent<EnemyPathing>().SetTargetPosition(soundPosition);
         }
     }
     
-    private void GoToNextPatrolPoint()
+        private void SetTarget(Transform target)
     {
-        if (patrolPoints.Length > 0)
+        if (target != null)
         {
-            agent.SetDestination(patrolPoints[currentPatrolIndex].position);
+            enemyPathing.GetComponent<EnemyPathing>().SetTargetTransform(target);
+        }
+    }
+    
+    private void FaceDirection()
+    {
+        UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent == null || agent.velocity == Vector3.zero)
+            return;
+        
+        Vector3 direction = agent.velocity.normalized;
+        
+        if (direction.magnitude > 0.1f)
+        {
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
         }
     }
 }

@@ -3,8 +3,10 @@ using UnityEngine.AI;
 
 public class EnemyPathing : MonoBehaviour
 {
-    [SerializeField] private Transform target;
-
+    private Transform target;
+    private Vector3 targetPosition;
+    private bool useTransformTarget = true;
+    
     NavMeshAgent agent;
 
     private void Start()
@@ -16,7 +18,25 @@ public class EnemyPathing : MonoBehaviour
 
     private void Update()
     {
-        agent.SetDestination(target.position);
+        if (useTransformTarget && target != null)
+        {
+            agent.SetDestination(target.position);
+        }
+        else if (!useTransformTarget)
+        {
+            agent.SetDestination(targetPosition);
+        }
     }
 
+    public void SetTargetTransform(Transform newTarget)
+    {
+        target = newTarget;
+        useTransformTarget = true;
+    }
+
+    public void SetTargetPosition(Vector3 newPosition)
+    {
+        targetPosition = newPosition;
+        useTransformTarget = false;
+    }
 }
