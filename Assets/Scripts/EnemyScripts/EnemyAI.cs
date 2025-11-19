@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 
 public class EnemyAI : MonoBehaviour
 {
@@ -12,6 +13,7 @@ public class EnemyAI : MonoBehaviour
     
     private EnemyPathing enemyPathing;
     private FieldOfView fieldOfView;
+    private NavMeshAgent agent;
     private int currentPatrolIndex = 0;
     private float patrolWaitCounter = 0f;
     private Vector3 soundInvestigationPoint;
@@ -22,10 +24,21 @@ public class EnemyAI : MonoBehaviour
     {
         enemyPathing = GetComponent<EnemyPathing>();
         fieldOfView = GetComponent<FieldOfView>();
+        agent = GetComponent<NavMeshAgent>();
+        
+        if (agent != null)
+        {
+            agent.stoppingDistance = stoppingDistance;
+        }
         
         if (patrolPoints.Length > 0)
         {
+            Debug.Log("Going to waypoint " + currentPatrolIndex);
             SetTarget(patrolPoints[currentPatrolIndex]);
+        }
+        else
+        {
+            Debug.LogError("No patrol points assigned!");
         }
     }
     
@@ -73,9 +86,10 @@ public class EnemyAI : MonoBehaviour
         
         float distToPoint = Vector3.Distance(transform.position, patrolPoints[currentPatrolIndex].position);
         
-        // Check if reached patrol point
-        if (distToPoint <= stoppingDistance)
+        // Check if reached patrol point (use NavMeshAgent's remainingDistance instead)
+        if (agent != null && agent.remainingDistance <= stoppingDistance && !agent.hasPath || agent.velocity.sqrMagnitude == 0f)
         {
+            
             patrolWaitCounter += Time.deltaTime;
             
             if (patrolWaitCounter >= patrolWaitTime)
@@ -83,7 +97,16 @@ public class EnemyAI : MonoBehaviour
                 // Move to next patrol point
                 currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
                 patrolWaitCounter = 0f;
+                Debug.Log("*** GOING to waypoint " + currentPatrolIndex + " ***");
                 SetTarget(patrolPoints[currentPatrolIndex]);
+            }
+        }
+        else
+        {
+            // Still moving to point
+            if (patrolWaitCounter > 0f)
+            {
+                patrolWaitCounter = 0f;
             }
         }
     }
@@ -142,31 +165,25 @@ public class EnemyAI : MonoBehaviour
             soundInvestigationPoint = soundPosition;
             currentState = EnemyState.Investigating;
             loseTrackCounter = 0f;
-            SetTarget(new GameObject("SoundPoint").transform);
             enemyPathing.GetComponent<EnemyPathing>().SetTargetPosition(soundPosition);
         }
     }
     
-        private void SetTarget(Transform target)
+    private void SetTarget(Transform target)
     {
-        if (target != null)
+        if (target != null && enemyPathing != null)
         {
-            enemyPathing.GetComponent<EnemyPathing>().SetTargetTransform(target);
+            enemyPathing.SetTargetTransform(target);
         }
     }
     
     private void FaceDirection()
     {
-        UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-        if (agent == null || agent.velocity == Vector3.zero)
+        if (agent == null || agent.velocity.magnitude < 0.1f)
             return;
         
         Vector3 direction = agent.velocity.normalized;
-        
-        if (direction.magnitude > 0.1f)
-        {
-            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-        }
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
 }

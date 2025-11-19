@@ -21,7 +21,7 @@ public class PlayerMovement : MonoBehaviour
             attr.breathingAudioSource = gameObject.AddComponent<AudioSource>();
         }
         attr.breathingAudioSource.loop = true;
-        attr.breathingAudioSource.spatialBlend = 1f; // 3D sound
+        attr.breathingAudioSource.spatialBlend = 1f;
         attr.breathingAudioSource.maxDistance = attr.breathingHearRadius;
     }
     
@@ -31,7 +31,7 @@ public class PlayerMovement : MonoBehaviour
         HandleStamina();
         HandleBreathing();
         HandleFootsteps();
-        Flip();
+        //Flip();
     }
     
     private void FixedUpdate()
@@ -41,13 +41,11 @@ public class PlayerMovement : MonoBehaviour
     
     private void HandleInput()
     {
-        // Get movement input (WASD or Arrow keys)
         attr.horizontal = Input.GetAxisRaw("Horizontal");
         attr.vertical = Input.GetAxisRaw("Vertical");
         attr.moveInput = new Vector2(attr.horizontal, attr.vertical);
-        attr.moveInput.Normalize(); // Prevent faster diagonal movement
+        attr.moveInput.Normalize();
         
-        // Check if player wants to run (Left Shift)
         attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && attr.moveInput.magnitude > 0;
     }
     
@@ -62,7 +60,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if (attr.isRunning)
         {
-            // Drain stamina while running
             if (playerSoundObject != null)
             {
                 playerSoundObject.SetActive(true);
@@ -78,7 +75,6 @@ public class PlayerMovement : MonoBehaviour
             {
                 playerSoundObject.SetActive(false);
             }
-            // Regenerate stamina after delay
             if (attr.staminaRegenTimer > 0)
             {
                 attr.staminaRegenTimer -= Time.deltaTime;
@@ -95,18 +91,15 @@ public class PlayerMovement : MonoBehaviour
     {
         float staminaPercentage = (attr.currentStamina / attr.maxStamina) * 100f;
         
-        // Start heavy breathing when stamina is low
         if (staminaPercentage < attr.heavyBreathingThreshold && !attr.isBreathingHeavily)
         {
             StartHeavyBreathing();
         }
-        // Stop heavy breathing when stamina recovers
         else if (staminaPercentage >= attr.heavyBreathingThreshold + 10f && attr.isBreathingHeavily)
         {
             StopHeavyBreathing();
         }
         
-        // Adjust breathing intensity based on stamina
         if (attr.isBreathingHeavily && attr.breathingAudioSource.isPlaying)
         {
             float intensity = 1f - (staminaPercentage / attr.heavyBreathingThreshold);
@@ -148,7 +141,6 @@ public class PlayerMovement : MonoBehaviour
         }
     }
     
-    // ===== Footstep Sound Management =====
     private void HandleFootsteps()
     {
         bool isMoving = rb.linearVelocity.magnitude > 0.1f;
@@ -157,7 +149,6 @@ public class PlayerMovement : MonoBehaviour
         {
             if (!playingFootsteps)
             {
-                // Just started moving - play immediately
                 PlayFootstep();
                 float currentFootstepSpeed = attr.isRunning ? footstepSpeed * 0.6f : footstepSpeed;
                 footstepTimer = currentFootstepSpeed;
@@ -165,13 +156,11 @@ public class PlayerMovement : MonoBehaviour
             }
             else
             {
-                // Continue moving - countdown timer
                 footstepTimer -= Time.deltaTime;
                 
                 if (footstepTimer <= 0f)
                 {
                     PlayFootstep();
-                    // Adjust footstep speed based on running
                     float currentFootstepSpeed = attr.isRunning ? footstepSpeed * 0.6f : footstepSpeed;
                     footstepTimer = currentFootstepSpeed;
                 }
@@ -179,7 +168,6 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            // Player stopped moving - reset
             playingFootsteps = false;
             footstepTimer = 0f;
         }
@@ -195,7 +183,6 @@ public class PlayerMovement : MonoBehaviour
         SoundEffectManager.Play("BackgroundMusic");
     }
     
-    // Public methods for UI or other systems
     public float GetStaminaPercentage()
     {
         return (attr.currentStamina / attr.maxStamina) * 100f;
@@ -211,7 +198,6 @@ public class PlayerMovement : MonoBehaviour
         return attr.breathingHearRadius;
     }
     
-    // For guards to check if they can hear the player
     public bool CanBeHeardAt(Vector3 listenerPosition)
     {
         if (!attr.isBreathingHeavily) return false;

@@ -14,6 +14,7 @@ public class EnemyPathing : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         agent.updateRotation = false;
         agent.updateUpAxis = false;
+        agent.stoppingDistance = 0.5f; // Match this with EnemyAI's stoppingDistance
     }
 
     private void Update()
@@ -32,11 +33,19 @@ public class EnemyPathing : MonoBehaviour
     {
         target = newTarget;
         useTransformTarget = true;
+        if (agent != null && target != null)
+        {
+            agent.SetDestination(target.position);
+        }
     }
 
     public void SetTargetPosition(Vector3 newPosition)
     {
         targetPosition = newPosition;
         useTransformTarget = false;
+        if (agent != null)
+        {
+            agent.SetDestination(newPosition);
+        }
     }
 }
