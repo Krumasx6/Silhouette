@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,7 +9,7 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float loseTrackTime = 6f;
     [SerializeField] private float stoppingDistance = 0.5f;
 
-    private enum EnemyState { Patrolling, Investigating, Chasing }
+    private enum EnemyState { Patrolling, Investigating, Chasing, Dead }
     private EnemyState currentState = EnemyState.Patrolling;
 
     private EnemyAttributes ea;
@@ -82,6 +83,7 @@ public class EnemyAI : MonoBehaviour
         ea.isPatrolling = (newState == EnemyState.Patrolling);
         ea.isInvestigating = (newState == EnemyState.Investigating);
         ea.isChasing = (newState == EnemyState.Chasing);
+        ea.isDead = (newState == EnemyState.Dead);
 
         ea.beingCautious = (newState == EnemyState.Investigating);
 

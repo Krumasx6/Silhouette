@@ -25,7 +25,7 @@ public class FieldOfViewMesh : MonoBehaviour
         mesh = GetComponent<MeshFilter>().mesh;
         fov = GetComponentInParent<FieldOfView>();
         meshRenderer = GetComponent<MeshRenderer>();
-        ea = GetComponent<EnemyAttributes>();
+        ea = GetComponentInParent<EnemyAttributes>();
         
         // Set initial color
         if (meshRenderer != null && meshRenderer.material != null)

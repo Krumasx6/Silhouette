@@ -19,4 +19,9 @@ public class EnemyAttributes : MonoBehaviour
     public int currentPatrolPointIndex = 0;
 
 
+    // ========== INTERNAL STATE ==========
+    [Header("Internal State")]
+    [Tooltip("Checking if the enemy is dead")]
+    public bool isDead = false;
+
 }
