@@ -38,4 +38,12 @@ public class PlayerKillingMechanics : MonoBehaviour
         }
     }
 
+    private void AttackingTheGuard()
+    {
+        if (pa.canAttack)
+        {
+            
+        }
+    }
+
 }
