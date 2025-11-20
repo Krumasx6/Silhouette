@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using UnityEditor.MPE;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class FieldOfViewMesh : MonoBehaviour
-{
+{   
+    private EnemyAttributes ea;
     FieldOfView fov;
     Mesh mesh;
     RaycastHit2D hit;   
@@ -14,7 +16,8 @@ public class FieldOfViewMesh : MonoBehaviour
     
     // Material and color variables
     private MeshRenderer meshRenderer;
-    private Color normalColor = new Color(255f/255f, 255f/255f, 0f/255f, 80f/255f); // Yellow
+    private Color normalColor = new Color(255f/255f, 255f/255f, 255f/255f, 80f/255f); // White
+    private Color cautiousColor = new Color(255f/255f, 255f/255f, 0f/255f, 80f/255f); // Yellow
     private Color detectedColor = new Color(255f/255f, 0f/255f, 0f/255f, 80f/255f); // Red
 
     void Start()
@@ -22,6 +25,7 @@ public class FieldOfViewMesh : MonoBehaviour
         mesh = GetComponent<MeshFilter>().mesh;
         fov = GetComponentInParent<FieldOfView>();
         meshRenderer = GetComponent<MeshRenderer>();
+        ea = GetComponent<EnemyAttributes>();
         
         // Set initial color
         if (meshRenderer != null && meshRenderer.material != null)
@@ -41,9 +45,13 @@ public class FieldOfViewMesh : MonoBehaviour
         if (meshRenderer != null && meshRenderer.material != null)
         {
             // Change color based on player detection
-            if (fov.playerInSight)
+            if (ea.sawPlayer)
             {
                 meshRenderer.material.color = detectedColor;
+            }
+            else if (ea.beingCautious)
+            {
+                meshRenderer.material.color = cautiousColor;
             }
             else
             {

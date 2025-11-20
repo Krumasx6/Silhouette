@@ -7,183 +7,185 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float patrolWaitTime = 2f;
     [SerializeField] private float loseTrackTime = 6f;
     [SerializeField] private float stoppingDistance = 0.5f;
-    
+
     private enum EnemyState { Patrolling, Investigating, Chasing }
     private EnemyState currentState = EnemyState.Patrolling;
-    
+
+    private EnemyAttributes ea;
     private EnemyPathing enemyPathing;
     private FieldOfView fieldOfView;
     private NavMeshAgent agent;
+
     private int currentPatrolIndex = 0;
     private float patrolWaitCounter = 0f;
-    private Vector3 soundInvestigationPoint;
     private float loseTrackCounter = 0f;
+
+    private Vector3 soundInvestigationPoint;
     private Transform playerTarget;
-    
+
     private void Start()
     {
         enemyPathing = GetComponent<EnemyPathing>();
         fieldOfView = GetComponent<FieldOfView>();
         agent = GetComponent<NavMeshAgent>();
-        
+        ea = GetComponent<EnemyAttributes>();
+
         if (agent != null)
-        {
             agent.stoppingDistance = stoppingDistance;
-        }
-        
+
         if (patrolPoints.Length > 0)
-        {
-            Debug.Log("Going to waypoint " + currentPatrolIndex);
             SetTarget(patrolPoints[currentPatrolIndex]);
-        }
-        else
-        {
-            Debug.LogError("No patrol points assigned!");
-        }
     }
-    
+
     private void Update()
     {
         FaceDirection();
-        
-        // Always check for player sight first
-        if (fieldOfView != null && fieldOfView.playerInSight && fieldOfView.visiblePlayer.Count > 0)
+
+        // ─── 1) CHASING has highest priority ───────────────────────────────
+        if (fieldOfView.visiblePlayer.Count > 0 && ea.sawPlayer)
         {
             playerTarget = fieldOfView.visiblePlayer[0];
             SetTarget(playerTarget);
-            currentState = EnemyState.Chasing;
+            SetState(EnemyState.Chasing);
             loseTrackCounter = 0f;
             return;
         }
-        else
-        {
-            // Player lost from sight
-            if (currentState == EnemyState.Chasing)
-            {
-                playerTarget = null;
-            }
-        }
-        
-        // Handle current state
+
+        // ─── Player lost from sight ─────────────────────────────────────────
+        if (currentState == EnemyState.Chasing && fieldOfView.visiblePlayer.Count == 0)
+            playerTarget = null;
+
+        // ─── 2) Handle active state ─────────────────────────────────────────
         switch (currentState)
         {
             case EnemyState.Patrolling:
                 HandlePatrolling();
                 break;
+
             case EnemyState.Investigating:
                 HandleInvestigating();
                 break;
+
             case EnemyState.Chasing:
                 HandleChasing();
                 break;
         }
     }
-    
+
+    // ───────────────────────────────────────────────────────────────
+    // SET STATE (your booleans update here, nowhere else)
+    // ───────────────────────────────────────────────────────────────
+    private void SetState(EnemyState newState)
+    {
+        currentState = newState;
+
+        ea.isPatrolling = (newState == EnemyState.Patrolling);
+        ea.isInvestigating = (newState == EnemyState.Investigating);
+        ea.isChasing = (newState == EnemyState.Chasing);
+
+        ea.beingCautious = (newState == EnemyState.Investigating);
+
+        // 🔥 FIX: reset patrol timer when leaving Patrolling
+        if (newState != EnemyState.Patrolling)
+        {
+            patrolWaitCounter = 0f;
+        }
+    }
+
+
+    // ───────────────────────────────────────────────────────────────
+    // PATROLLING
+    // ───────────────────────────────────────────────────────────────
     private void HandlePatrolling()
     {
         if (patrolPoints.Length == 0)
             return;
-        
-        float distToPoint = Vector3.Distance(transform.position, patrolPoints[currentPatrolIndex].position);
-        
-        // Check if reached patrol point (use NavMeshAgent's remainingDistance instead)
-        if (agent != null && agent.remainingDistance <= stoppingDistance && !agent.hasPath || agent.velocity.sqrMagnitude == 0f)
+
+        if (agent.remainingDistance <= stoppingDistance && !agent.hasPath)
         {
-            
             patrolWaitCounter += Time.deltaTime;
-            
+
             if (patrolWaitCounter >= patrolWaitTime)
             {
-                // Move to next patrol point
                 currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
                 patrolWaitCounter = 0f;
-                Debug.Log("*** GOING to waypoint " + currentPatrolIndex + " ***");
                 SetTarget(patrolPoints[currentPatrolIndex]);
             }
         }
         else
         {
-            // Still moving to point
-            if (patrolWaitCounter > 0f)
-            {
-                patrolWaitCounter = 0f;
-            }
+            patrolWaitCounter = 0f;
         }
     }
-    
+
+    // ───────────────────────────────────────────────────────────────
+    // INVESTIGATING (sound)
+    // ───────────────────────────────────────────────────────────────
     private void HandleInvestigating()
     {
-        float distToSound = Vector3.Distance(transform.position, soundInvestigationPoint);
-        
-        // Check if reached sound location
-        if (distToSound <= stoppingDistance)
-        {
-            // Reached sound source, wait and listen
-            loseTrackCounter += Time.deltaTime;
-        }
-        else
-        {
-            // Still moving to sound location
-            loseTrackCounter += Time.deltaTime;
-        }
-        
-        // Give up searching
+        float dist = Vector3.Distance(transform.position, soundInvestigationPoint);
+
+        loseTrackCounter += Time.deltaTime;
+
         if (loseTrackCounter >= loseTrackTime)
         {
-            currentState = EnemyState.Patrolling;
+            SetState(EnemyState.Patrolling);
             patrolWaitCounter = 0f;
             SetTarget(patrolPoints[currentPatrolIndex]);
         }
     }
-    
+
+    // ───────────────────────────────────────────────────────────────
+    // CHASING
+    // ───────────────────────────────────────────────────────────────
     private void HandleChasing()
     {
         if (playerTarget == null)
         {
-            currentState = EnemyState.Patrolling;
+            SetState(EnemyState.Patrolling);
             SetTarget(patrolPoints[currentPatrolIndex]);
             return;
         }
-        
-        // Lose track timer
+
         loseTrackCounter += Time.deltaTime;
+
         if (loseTrackCounter >= loseTrackTime)
         {
             playerTarget = null;
-            currentState = EnemyState.Patrolling;
-            patrolWaitCounter = 0f;
+            SetState(EnemyState.Patrolling);
             SetTarget(patrolPoints[currentPatrolIndex]);
         }
     }
-    
-    // Call this from EnemyListener when sound is detected
-    public void OnPlayerSoundDetected(Vector3 soundPosition)
+
+    // ───────────────────────────────────────────────────────────────
+    // SOUND EVENT from EnemyListener
+    // ───────────────────────────────────────────────────────────────
+    public void OnPlayerSoundDetected(Vector3 soundPos)
     {
-        // Only switch to investigating if not already chasing
-        if (currentState != EnemyState.Chasing)
-        {
-            soundInvestigationPoint = soundPosition;
-            currentState = EnemyState.Investigating;
-            loseTrackCounter = 0f;
-            enemyPathing.GetComponent<EnemyPathing>().SetTargetPosition(soundPosition);
-        }
+        if (currentState == EnemyState.Chasing)
+            return; // ignore sound when already chasing
+
+        soundInvestigationPoint = soundPos;
+        loseTrackCounter = 0f;
+
+        enemyPathing.SetTargetPosition(soundPos);
+
+        SetState(EnemyState.Investigating);
     }
-    
+
     private void SetTarget(Transform target)
     {
-        if (target != null && enemyPathing != null)
-        {
+        if (target != null)
             enemyPathing.SetTargetTransform(target);
-        }
     }
-    
+
     private void FaceDirection()
     {
-        if (agent == null || agent.velocity.magnitude < 0.1f)
+        if (agent.velocity.magnitude < 0.1f)
             return;
-        
-        Vector3 direction = agent.velocity.normalized;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        Vector3 dir = agent.velocity.normalized;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
 }

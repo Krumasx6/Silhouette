@@ -38,13 +38,17 @@ public class PlayerAttributes : MonoBehaviour
     public AudioSource breathingAudioSource;
     [Tooltip("Audio clip for heavy breathing sound")]
     public AudioClip heavyBreathingClip;
-    [Tooltip("Distance in units that guards can hear breathing")]
+    [Tooltip("Distance in units that guards can hear sbreathing")]
     public float breathingHearRadius = 10f;
 
     // ========== INTERNAL STATE ==========
-    [HideInInspector] public Vector2 moveInput;
-    [HideInInspector] public bool isRunning;
-     public float currentStamina;
-    [HideInInspector] public float staminaRegenTimer;
-    [HideInInspector] public bool isBreathingHeavily;
+    [Header("Internal State")]
+    [Tooltip("Checking the state of the player")]
+    public Vector2 moveInput;
+    public bool isRunning;
+    public float currentStamina;
+    public bool canAttack;
+    public bool notSeen;
+    public float staminaRegenTimer;
+    public bool isBreathingHeavily;
 }

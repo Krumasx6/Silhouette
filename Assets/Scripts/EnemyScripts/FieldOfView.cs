@@ -3,15 +3,21 @@ using CodeMonkey.Utils;
 using UnityEngine;
 
 public class FieldOfView : MonoBehaviour
-{
+{   
+    private EnemyAttributes ea;
     public float viewRadius = 5;
     public float viewAngle = 135;
     public float eyeOffset = 0.45f;
     Collider2D[] playerInRadius;
     public LayerMask obstacleMask, playerMask;
     public List<Transform> visiblePlayer = new List<Transform>();
-    public bool playerInSight;
-    [SerializeField] private int edgeResolveIterations = 3; // Number of points to check on player collider
+    [SerializeField] private int edgeResolveIterations = 3;
+
+    void Start()
+    {
+        ea = GetComponent<EnemyAttributes>();
+    }
+
 
     void FixedUpdate()
     {
@@ -21,7 +27,7 @@ public class FieldOfView : MonoBehaviour
     void FindVisiblePlayer()
     {
         visiblePlayer.Clear();
-        playerInSight = false;
+        ea.sawPlayer = false;
 
         Vector2 eyePosition = (Vector2)transform.position + (Vector2)transform.right * 0.4f + new Vector2(0, eyeOffset);
 
@@ -29,7 +35,7 @@ public class FieldOfView : MonoBehaviour
         Collider2D closeHit = Physics2D.OverlapCircle(eyePosition, proximityRadius, playerMask);
         if (closeHit != null)
         {
-            playerInSight = true;
+            ea.sawPlayer = true;
             visiblePlayer.Add(closeHit.transform);
             return; // Exit early, no need to run the cone logic
         }
@@ -41,7 +47,7 @@ public class FieldOfView : MonoBehaviour
 
             if (Vector2.Distance(player.position, eyePosition) < 0.7f)
             {
-                playerInSight = true;
+                ea.sawPlayer = true;
                 visiblePlayer.Add(player);
                 continue; // Skip to next player, already detected
             }
@@ -95,7 +101,7 @@ public class FieldOfView : MonoBehaviour
                 if (canSeePlayer)
                 {
                     visiblePlayer.Add(player);
-                    playerInSight = true;
+                    ea.sawPlayer = true;
                 }
             }
         }
