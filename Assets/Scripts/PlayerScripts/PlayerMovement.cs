@@ -1,7 +1,12 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
-{
+{   
+    Animator anim;
+    private Vector2 lastMoveDirection;
+    private bool facingLeft = true;
+
     private PlayerAttributes attr;
     private Rigidbody2D rb;
     [SerializeField] private GameObject playerSoundObject;
@@ -14,6 +19,7 @@ public class PlayerMovement : MonoBehaviour
         attr = GetComponent<PlayerAttributes>();
         rb = GetComponent<Rigidbody2D>();
         attr.currentStamina = attr.maxStamina;
+        anim = GetComponentInChildren<Animator>();
         
         // Setup audio source for breathing
         if (attr.breathingAudioSource == null)
@@ -31,7 +37,8 @@ public class PlayerMovement : MonoBehaviour
         HandleStamina();
         HandleBreathing();
         HandleFootsteps();
-        //Flip();
+        Flip();
+        Animate();
     }
     
     private void FixedUpdate()
@@ -41,12 +48,31 @@ public class PlayerMovement : MonoBehaviour
     
     private void HandleInput()
     {
-        attr.horizontal = Input.GetAxisRaw("Horizontal");
-        attr.vertical = Input.GetAxisRaw("Vertical");
-        attr.moveInput = new Vector2(attr.horizontal, attr.vertical);
-        attr.moveInput.Normalize();
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveY = Input.GetAxisRaw("Vertical");
+
+        if ((moveX == 0 && moveY == 0) && (attr.input.x != 0 || attr.input.y != 0))
+            lastMoveDirection = attr.input;
+
+        attr.input = new Vector2(moveX, moveY);
+        attr.moveInput = new Vector2(moveX, moveY).normalized;
+
+
+        attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && attr.input.magnitude > 0;
+    }
+
+
+    private void Animate()
+    {
+        anim.SetFloat("DirX", attr.input.x);
+        anim.SetFloat("DirY", attr.input.y);
+        anim.SetFloat("Speed", new Vector2(attr.input.x, attr.input.y).magnitude);
+
+        anim.SetFloat("LatMoveX", lastMoveDirection.x);
+        anim.SetFloat("LastMoveY", lastMoveDirection.y);
+
+        anim.SetBool("isRunning", attr.isRunning);
         
-        attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && attr.moveInput.magnitude > 0;
     }
     
     private void HandleMovement()
@@ -125,21 +151,25 @@ public class PlayerMovement : MonoBehaviour
     
     private void Flip()
     {
-        bool playerHasHorizontalSpeed = Mathf.Abs(rb.linearVelocity.x) > Mathf.Epsilon;
-        if (playerHasHorizontalSpeed)
+        // 1) If no horizontal input, keep the current facing direction
+        if (Mathf.Abs(rb.linearVelocity.x) < 0.1f)
+            return;
+
+        // 2) Determine if player should face left or right
+        bool shouldFaceLeft = rb.linearVelocity.x < 0f;
+
+        // 3) Only flip if direction actually changed
+        if (shouldFaceLeft != attr.isFacingLeft)
         {
-            transform.localScale = new Vector2(Mathf.Sign(rb.linearVelocity.x), 1f);
-            
-            if (transform.localScale.x == 1)
-            {
-                attr.isFacingRight = true;
-            }
-            else if (transform.localScale.x == -1)
-            {
-                attr.isFacingRight = false;
-            }
+            attr.isFacingLeft = shouldFaceLeft;
+
+            // 4) Flip the sprite by changing localScale
+            Vector3 scale = transform.localScale;
+            scale.x = shouldFaceLeft ? -1f : 1f;
+            transform.localScale = scale;
         }
     }
+
     
     private void HandleFootsteps()
     {

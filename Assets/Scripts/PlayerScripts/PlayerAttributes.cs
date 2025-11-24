@@ -3,14 +3,11 @@ using UnityEngine;
 public class PlayerAttributes : MonoBehaviour
 {
     // ========== FACING DIRECTION ==========
-    public bool isFacingRight;
+    public bool isFacingLeft;
 
     // ========== MOVEMENT INPUT ==========
     [Header("Movement Input")]
-    [Tooltip("Horizontal input (-1 to 1)")]
-    public float horizontal;
-    [Tooltip("Vertical input (-1 to 1)")]
-    public float vertical;
+    public Vector2 input;
 
     // ========== WALKING & RUNNING ==========
     [Header("Movement Speed")]
