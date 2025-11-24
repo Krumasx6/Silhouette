@@ -37,7 +37,10 @@ public class PlayerMovement : MonoBehaviour
         HandleStamina();
         HandleBreathing();
         HandleFootsteps();
-        Flip();
+        if(attr.input.x < 0 && !attr.isFacingLeft || attr.input.x > 0 && attr.isFacingLeft)
+        {
+          Flip();  
+        }
         Animate();
     }
     
@@ -57,10 +60,8 @@ public class PlayerMovement : MonoBehaviour
         attr.input = new Vector2(moveX, moveY);
         attr.moveInput = new Vector2(moveX, moveY).normalized;
 
-
         attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && attr.input.magnitude > 0;
     }
-
 
     private void Animate()
     {
@@ -72,7 +73,6 @@ public class PlayerMovement : MonoBehaviour
         anim.SetFloat("LastMoveY", lastMoveDirection.y);
 
         anim.SetBool("isRunning", attr.isRunning);
-        
     }
     
     private void HandleMovement()
@@ -89,7 +89,6 @@ public class PlayerMovement : MonoBehaviour
             if (playerSoundObject != null)
             {
                 playerSoundObject.SetActive(true);
-
             }
             attr.currentStamina -= attr.staminaDrainRate * Time.deltaTime;
             attr.currentStamina = Mathf.Max(0, attr.currentStamina);
@@ -151,23 +150,10 @@ public class PlayerMovement : MonoBehaviour
     
     private void Flip()
     {
-        // 1) If no horizontal input, keep the current facing direction
-        if (Mathf.Abs(rb.linearVelocity.x) < 0.1f)
-            return;
-
-        // 2) Determine if player should face left or right
-        bool shouldFaceLeft = rb.linearVelocity.x < 0f;
-
-        // 3) Only flip if direction actually changed
-        if (shouldFaceLeft != attr.isFacingLeft)
-        {
-            attr.isFacingLeft = shouldFaceLeft;
-
-            // 4) Flip the sprite by changing localScale
-            Vector3 scale = transform.localScale;
-            scale.x = shouldFaceLeft ? -1f : 1f;
-            transform.localScale = scale;
-        }
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+        attr.isFacingLeft = !attr.isFacingLeft;
     }
 
     
