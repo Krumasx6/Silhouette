@@ -37,10 +37,8 @@ public class PlayerMovement : MonoBehaviour
         HandleStamina();
         HandleBreathing();
         HandleFootsteps();
-        if(attr.input.x < 0 && !attr.isFacingLeft || attr.input.x > 0 && attr.isFacingLeft)
-        {
-          Flip();  
-        }
+
+        Flip();
         Animate();
     }
     
@@ -65,15 +63,20 @@ public class PlayerMovement : MonoBehaviour
 
     private void Animate()
     {
+        float velocity = rb.linearVelocity.magnitude;
+
+        anim.SetFloat("Speed", velocity);
         anim.SetFloat("DirX", attr.input.x);
         anim.SetFloat("DirY", attr.input.y);
-        anim.SetFloat("Speed", new Vector2(attr.input.x, attr.input.y).magnitude);
 
-        anim.SetFloat("LatMoveX", lastMoveDirection.x);
+        anim.SetFloat("LastMoveX", lastMoveDirection.x);
         anim.SetFloat("LastMoveY", lastMoveDirection.y);
 
         anim.SetBool("isRunning", attr.isRunning);
+
+        
     }
+
     
     private void HandleMovement()
     {
@@ -148,13 +151,27 @@ public class PlayerMovement : MonoBehaviour
         attr.breathingAudioSource.Stop();
     }
     
-    private void Flip()
-    {
-        Vector3 scale = transform.localScale;
-        scale.x *= -1;
-        transform.localScale = scale;
-        attr.isFacingLeft = !attr.isFacingLeft;
-    }
+       private void Flip()
+        {
+            bool playerHasHorizontalSpeed = Mathf.Abs(rb.linearVelocityX) > Mathf.Epsilon;
+            if (playerHasHorizontalSpeed)
+            {
+                transform.localScale = new Vector2(Mathf.Sign(rb.linearVelocityX), 1f);
+                if (transform.localScale.x == 1)
+                {
+                    attr.isFacingRight = true;
+                    if (attr.isFacingRight)
+                    {
+                        attr.isFacingRight = true;
+                    }
+                }
+                else if (transform.localScale.x == -1)
+                {
+                    attr.isFacingRight = attr.isFacingRight = false;
+                }
+            }
+        }
+
 
     
     private void HandleFootsteps()

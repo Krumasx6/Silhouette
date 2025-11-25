@@ -3,7 +3,7 @@ using UnityEngine;
 public class PlayerAttributes : MonoBehaviour
 {
     // ========== FACING DIRECTION ==========
-    public bool isFacingLeft;
+    public bool isFacingRight;
 
     // ========== MOVEMENT INPUT ==========
     [Header("Movement Input")]
