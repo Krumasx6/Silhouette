@@ -3,23 +3,29 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {   
-    Animator anim;
-    private Vector2 lastMoveDirection;
-    private bool facingLeft = true;
-
+    [Header("Components")]
+    [SerializeField] private Animator anim;
     private PlayerAttributes attr;
     private Rigidbody2D rb;
+    
+    [Header("Audio")]
     [SerializeField] private GameObject playerSoundObject;
     [SerializeField] private float footstepSpeed = 0.5f;
     private bool playingFootsteps = false;
     private float footstepTimer = 0f;
     
+    [Header("Movement State")]
+    private Vector2 input;
+    private Vector2 lastMoveDirection;
+    private bool facingRight = true;
+    
     private void Start()
     {
         attr = GetComponent<PlayerAttributes>();
         rb = GetComponent<Rigidbody2D>();
+        
         attr.currentStamina = attr.maxStamina;
-        anim = GetComponentInChildren<Animator>();
+        lastMoveDirection = Vector2.down;
         
         // Setup audio source for breathing
         if (attr.breathingAudioSource == null)
@@ -33,13 +39,15 @@ public class PlayerMovement : MonoBehaviour
     
     private void Update()
     {
-        HandleInput();
+        ProcessInputs();
         HandleStamina();
         HandleBreathing();
         HandleFootsteps();
-
-        Flip();
         Animate();
+        
+        // Flip only when horizontal movement present
+        if (input.x > 0 && !facingRight) Flip();
+        else if (input.x < 0 && facingRight) Flip();
     }
     
     private void FixedUpdate()
@@ -47,42 +55,50 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
     }
     
-    private void HandleInput()
+    private void ProcessInputs()
     {
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveY = Input.GetAxisRaw("Vertical");
 
-        if ((moveX == 0 && moveY == 0) && (attr.input.x != 0 || attr.input.y != 0))
-            lastMoveDirection = attr.input;
+        // Store lastMoveDirection only when input stops
+        if (moveX == 0f && moveY == 0f && (input.x != 0f || input.y != 0f))
+        {
+            lastMoveDirection = input;
+        }
 
-        attr.input = new Vector2(moveX, moveY);
-        attr.moveInput = new Vector2(moveX, moveY).normalized;
+        input.x = moveX;
+        input.y = moveY;
+        input = input.normalized;
 
-        attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && attr.input.magnitude > 0;
+        // Running logic
+        attr.isRunning = Input.GetKey(KeyCode.LeftShift) && attr.currentStamina > 0 && input.magnitude > 0;
     }
 
     private void Animate()
     {
-        float velocity = rb.linearVelocity.magnitude;
+        if (anim == null) return;
 
-        anim.SetFloat("Speed", velocity);
-        anim.SetFloat("DirX", attr.input.x);
-        anim.SetFloat("DirY", attr.input.y);
-
+        anim.SetFloat("MoveX", input.x);
+        anim.SetFloat("MoveY", input.y);
+        anim.SetFloat("MoveMagnitude", input.magnitude);
+        anim.SetBool("isRunning", attr.isRunning);
         anim.SetFloat("LastMoveX", lastMoveDirection.x);
         anim.SetFloat("LastMoveY", lastMoveDirection.y);
-
-        anim.SetBool("isRunning", attr.isRunning);
-
-        
     }
-
     
     private void HandleMovement()
     {
         float currentSpeed = attr.isRunning ? attr.runSpeed : attr.walkSpeed;
-        Vector2 velocity = attr.moveInput * currentSpeed;
-        rb.linearVelocity = velocity;
+        rb.linearVelocity = input * currentSpeed;
+    }
+    
+    private void Flip()
+    {
+        Vector3 scale = transform.localScale;
+        scale.x *= -1f;
+        transform.localScale = scale;
+        facingRight = !facingRight;
+        attr.isFacingRight = facingRight;
     }
     
     private void HandleStamina()
@@ -150,29 +166,6 @@ public class PlayerMovement : MonoBehaviour
         attr.isBreathingHeavily = false;
         attr.breathingAudioSource.Stop();
     }
-    
-       private void Flip()
-        {
-            bool playerHasHorizontalSpeed = Mathf.Abs(rb.linearVelocityX) > Mathf.Epsilon;
-            if (playerHasHorizontalSpeed)
-            {
-                transform.localScale = new Vector2(Mathf.Sign(rb.linearVelocityX), 1f);
-                if (transform.localScale.x == 1)
-                {
-                    attr.isFacingRight = true;
-                    if (attr.isFacingRight)
-                    {
-                        attr.isFacingRight = true;
-                    }
-                }
-                else if (transform.localScale.x == -1)
-                {
-                    attr.isFacingRight = attr.isFacingRight = false;
-                }
-            }
-        }
-
-
     
     private void HandleFootsteps()
     {
