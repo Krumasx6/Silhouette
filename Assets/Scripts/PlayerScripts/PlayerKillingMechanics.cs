@@ -5,7 +5,8 @@ public class PlayerKillingMechanics : MonoBehaviour
 {
     private PlayerAttributes pa;
     private EnemyAttributes currentEnemy;
-    
+    private SpawningDeadBodies spawnPrefabs;
+
     void Start()
     {
         pa = GetComponentInParent<PlayerAttributes>();
@@ -28,11 +29,11 @@ public class PlayerKillingMechanics : MonoBehaviour
             {
                 if (!currentEnemy.isChasing && !currentEnemy.beingCautious)
                 {
-                    StartCoroutine(Kill());
+                    Kill();
                 }
                 else if (currentEnemy.beingCautious)
                 {
-                    StartCoroutine(AttemptKill());
+                    AttemptKill();
                 }
             }
         }
@@ -43,6 +44,7 @@ public class PlayerKillingMechanics : MonoBehaviour
         if (collision.gameObject.CompareTag("Enemy"))
         {
             currentEnemy = collision.GetComponent<EnemyAttributes>();
+            spawnPrefabs = collision.GetComponent<SpawningDeadBodies>();
             
             if (currentEnemy != null)
             {
@@ -70,26 +72,23 @@ public class PlayerKillingMechanics : MonoBehaviour
         }
     }
     
-    private IEnumerator Kill()
+    private void Kill()
     {
         if (currentEnemy != null)
         {
             currentEnemy.isDead = true;
-            yield return new WaitForSeconds(0.5f);
-            Destroy(currentEnemy.gameObject);
+            spawnPrefabs.StartCoroutine(spawnPrefabs.SpawnDeadBody());
         }
         pa.canAttack = false;
         currentEnemy = null;
     }
 
-    private IEnumerator AttemptKill()
+    private void AttemptKill()
     {
         int randNum = Random.Range(0, 2);
         if (randNum == 1)
         {
-            currentEnemy.isDead = true;
-            yield return new WaitForSeconds(0.5f);
-            Destroy(currentEnemy.gameObject);
+            spawnPrefabs.StartCoroutine(spawnPrefabs.SpawnDeadBody());
         }
         else
         {

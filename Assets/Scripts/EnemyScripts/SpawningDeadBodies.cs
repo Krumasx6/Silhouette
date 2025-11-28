@@ -1,8 +1,10 @@
+using System.Collections;
 using UnityEngine;
 
 public class SpawningDeadBodies : MonoBehaviour
 {
     [SerializeField] private GameObject deadBodies;
+    private Rigidbody2D rb;
     private bool spawnedBodies = false;
 
     private EnemyAttributes ea;
@@ -10,19 +12,17 @@ public class SpawningDeadBodies : MonoBehaviour
     void Start()
     {
         ea = GetComponent<EnemyAttributes>();
+        rb = GetComponent<Rigidbody2D>();
     }
 
-    void Update()
-    {
-        if (ea.isDead && !spawnedBodies)
-        {   
-            SpawnDeadBody();
-        }
-    }
-
-    private void SpawnDeadBody()
+    public IEnumerator SpawnDeadBody()
     {
         spawnedBodies = true;
-        Debug.Log("Spawned dead bodies");
+        rb.linearVelocity = Vector2.zero;
+        yield return new WaitForSeconds(0.3f);
+        Instantiate(deadBodies, ea.gameObject.transform.position, Quaternion.identity);
+        ea.gameObject.SetActive(false);
+        yield return new WaitForSeconds(0.2f);
+        Destroy(ea.gameObject);
     }
 }
