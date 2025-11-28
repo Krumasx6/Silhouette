@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class PlayerKillingMechanics : MonoBehaviour
@@ -27,11 +28,11 @@ public class PlayerKillingMechanics : MonoBehaviour
             {
                 if (!currentEnemy.isChasing && !currentEnemy.beingCautious)
                 {
-                    PerfectlyKill();
+                    StartCoroutine(Kill());
                 }
                 else if (currentEnemy.beingCautious)
                 {
-                    ChancingKill();
+                    StartCoroutine(AttemptKill());
                 }
             }
         }
@@ -46,7 +47,7 @@ public class PlayerKillingMechanics : MonoBehaviour
             if (currentEnemy != null)
             {
                 if (!currentEnemy.isChasing)
-                {
+                {   
                     pa.canAttack = true;
                     Debug.Log("Press E to attack!");
                 }
@@ -68,34 +69,31 @@ public class PlayerKillingMechanics : MonoBehaviour
             Debug.Log("Left attack range");
         }
     }
-
-    private void PerfectlyKill()
+    
+    private IEnumerator Kill()
     {
-        Debug.Log("Killed 100%");
         if (currentEnemy != null)
         {
+            currentEnemy.isDead = true;
+            yield return new WaitForSeconds(0.5f);
             Destroy(currentEnemy.gameObject);
         }
         pa.canAttack = false;
         currentEnemy = null;
     }
 
-    private void ChancingKill()
+    private IEnumerator AttemptKill()
     {
         int randNum = Random.Range(0, 2);
         if (randNum == 1)
         {
-            Debug.Log("Killed!!!");
-            if (currentEnemy != null)
-            {
-                Destroy(currentEnemy.gameObject);
-            }
-            pa.canAttack = false;
-            currentEnemy = null;
+            currentEnemy.isDead = true;
+            yield return new WaitForSeconds(0.5f);
+            Destroy(currentEnemy.gameObject);
         }
         else
         {
-            Debug.Log("Can't kill, the guard is on guard!");
+            //not kill
         }
     }
 }
