@@ -44,7 +44,7 @@ public class PlayerAttributes : MonoBehaviour
     public Vector2 moveInput;
     public bool isRunning;
     public float currentStamina;
-    public bool canAttack = false;
+    public bool canAttack;
     public float staminaRegenTimer;
     public bool isBreathingHeavily;
 }

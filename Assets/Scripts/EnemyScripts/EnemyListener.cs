@@ -7,8 +7,8 @@ public class EnemyListener : MonoBehaviour
     
     private void Start()
     {
-        enemyAI = GetComponent<EnemyAI>();
-        ea = GetComponent<EnemyAttributes>();
+        enemyAI = GetComponentInParent<EnemyAI>();
+        ea = GetComponentInParent<EnemyAttributes>();
     }
     
     private void OnTriggerStay2D(Collider2D collision)
