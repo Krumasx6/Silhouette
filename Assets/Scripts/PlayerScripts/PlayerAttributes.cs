@@ -47,4 +47,6 @@ public class PlayerAttributes : MonoBehaviour
     public bool canAttack;
     public float staminaRegenTimer;
     public bool isBreathingHeavily;
+    public bool canHide;
+    public bool isHiding;
 }
