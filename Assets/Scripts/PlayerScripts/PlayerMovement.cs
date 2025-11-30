@@ -57,6 +57,13 @@ public class PlayerMovement : MonoBehaviour
     
     private void ProcessInputs()
     {
+        if (attr.isHiding)
+        {
+            input = Vector2.zero;
+            attr.isRunning = false;
+            return;
+        }
+        
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveY = Input.GetAxisRaw("Vertical");
 
@@ -88,6 +95,12 @@ public class PlayerMovement : MonoBehaviour
     
     private void HandleMovement()
     {
+        if (attr.isHiding)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
+        
         float currentSpeed = attr.isRunning ? attr.runSpeed : attr.walkSpeed;
         rb.linearVelocity = input * currentSpeed;
     }

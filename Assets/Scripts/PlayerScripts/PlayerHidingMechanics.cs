@@ -4,23 +4,22 @@ public class PlayerHidingMechanics : MonoBehaviour
 {
     private PlayerAttributes pa;
     private Rigidbody2D rb;
-    private SpriteRenderer spriteRenderer;
+    [SerializeField] private SpriteRenderer spriteRenderer;
     
     private Transform hideSpot;
-    private Vector3 originalPosition;
+    private Vector3 playerCurrentPosition;
     
     void Start()
     {
         pa = GetComponentInParent<PlayerAttributes>();
         rb = GetComponentInParent<Rigidbody2D>();
-        spriteRenderer = GetComponentInParent<SpriteRenderer>();
     }
 
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
-            if (pa.canHide && !pa.isHiding)
+            if (pa.canHide && !pa.isHiding && hideSpot != null)
             {
                 Hide();
             }
@@ -37,42 +36,29 @@ public class PlayerHidingMechanics : MonoBehaviour
         {
             hideSpot = collision.transform;
             pa.canHide = true;
+            Debug.Log("Press R to hide");
         }
     }
 
     void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.gameObject.CompareTag("HideSpot"))
+        if (collision.gameObject.CompareTag("HideSpot") && !pa.isHiding)
         {
             hideSpot = null;
             pa.canHide = false;
-            
-            if (pa.isHiding)
-            {
-                Unhide();
-            }
         }
     }
 
     private void Hide()
     {
-        if (hideSpot == null)
-        {
-            return;
-        }
+        playerCurrentPosition = transform.parent.position;
         
-        if (transform.parent == null)
-        {
-            return;
-        }
-        
-        originalPosition = transform.parent.position;
-        
-        rb.linearVelocity = Vector2.zero;
         transform.parent.position = hideSpot.position;
         
+        rb.linearVelocity = Vector2.zero;
+        rb.bodyType = RigidbodyType2D.Static;
+        
         spriteRenderer.enabled = false;
-        rb.simulated = false;
         
         pa.isHiding = true;
         Debug.Log("Hidden!");
@@ -80,12 +66,15 @@ public class PlayerHidingMechanics : MonoBehaviour
 
     private void Unhide()
     {
-        transform.parent.position = originalPosition;
+        transform.parent.position = playerCurrentPosition;
+        
+        rb.bodyType = RigidbodyType2D.Dynamic;
         
         spriteRenderer.enabled = true;
-        rb.simulated = true;
         
         pa.isHiding = false;
+        pa.canHide = false;
+        hideSpot = null;
         Debug.Log("Unhidden!");
     }
 }
