@@ -6,8 +6,14 @@ public class PlayerHidingMechanics : MonoBehaviour
     private Rigidbody2D rb;
     [SerializeField] private SpriteRenderer spriteRenderer;
     
+    [Header("Debounce Settings")]
+    [SerializeField] private float hideDebounceTime = 2f;
+    [SerializeField] private float unhideDebounceTime = 2f;
+    
     private Transform hideSpot;
     private Vector3 playerCurrentPosition;
+    private float lastActionTime = -999f;
+    private bool canPerformAction = true;
     
     void Start()
     {
@@ -17,7 +23,7 @@ public class PlayerHidingMechanics : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.R))
+        if (Input.GetKeyDown(KeyCode.R) && canPerformAction)
         {
             if (pa.canHide && !pa.isHiding && hideSpot != null)
             {
@@ -61,7 +67,12 @@ public class PlayerHidingMechanics : MonoBehaviour
         spriteRenderer.enabled = false;
         
         pa.isHiding = true;
-        Debug.Log("Hidden!");
+        
+        canPerformAction = false;
+        lastActionTime = Time.time;
+        Invoke(nameof(EnableAction), hideDebounceTime);
+        
+        Debug.Log("Hidden! Wait " + hideDebounceTime + " seconds to unhide");
     }
 
     private void Unhide()
@@ -75,6 +86,16 @@ public class PlayerHidingMechanics : MonoBehaviour
         pa.isHiding = false;
         pa.canHide = false;
         hideSpot = null;
-        Debug.Log("Unhidden!");
+        
+        canPerformAction = false;
+        lastActionTime = Time.time;
+        Invoke(nameof(EnableAction), unhideDebounceTime);
+        
+        Debug.Log("Unhidden! Wait " + unhideDebounceTime + " seconds to hide again");
+    }
+    
+    private void EnableAction()
+    {
+        canPerformAction = true;
     }
 }
