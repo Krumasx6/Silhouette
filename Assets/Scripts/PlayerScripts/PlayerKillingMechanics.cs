@@ -85,14 +85,25 @@ public class PlayerKillingMechanics : MonoBehaviour
 
     private void AttemptKill()
     {
-        int randNum = Random.Range(0, 2);
-        if (randNum == 1)
+        if (Random.Range(0, 2) == 1)
         {
             spawnPrefabs.StartCoroutine(spawnPrefabs.SpawnDeadBody());
         }
         else
         {
-            //not kill
+            //var qte = FindObjectOfType<ReactionQTE>();
+            int length = Random.Range(3, 6); // 3-5 keys
+            //qte.StartQTE(length, OnQTESuccess, OnQTEFail);
         }
+    }
+
+    private void OnQTESuccess()
+    {
+        spawnPrefabs.StartCoroutine(spawnPrefabs.SpawnDeadBody());
+    }
+
+    private void OnQTEFail()
+    {
+        // handle failure (guard resists, alarm, damage, etc.)
     }
 }
