@@ -18,6 +18,8 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 input;
     private Vector2 lastMoveDirection;
     private bool facingRight = true;
+
+    [SerializeField] private GameObject qtePanel;
     
     private void Start()
     {
@@ -39,6 +41,11 @@ public class PlayerMovement : MonoBehaviour
     
     private void Update()
     {
+        if (qtePanel != null && qtePanel.activeSelf)
+        {
+            return; // Just block all movement code
+        }
+        
         ProcessInputs();
         HandleStamina();
         HandleBreathing();
@@ -51,7 +58,13 @@ public class PlayerMovement : MonoBehaviour
     }
     
     private void FixedUpdate()
-    {
+    {   
+        if (qtePanel != null && qtePanel.activeSelf)
+        {   
+            rb.linearVelocity = Vector2.zero; // Stop velocity
+            rb.angularVelocity = 0f; // Stop rotation
+            return; // Don't process any movement
+        }
         HandleMovement();
     }
     
@@ -95,15 +108,23 @@ public class PlayerMovement : MonoBehaviour
     
     private void HandleMovement()
     {
+        if (Time.timeScale == 0f)
+        {
+            return;
+        }
+
         if (attr.isHiding)
         {
             rb.linearVelocity = Vector2.zero;
             return;
         }
-        
+
         float currentSpeed = attr.isRunning ? attr.runSpeed : attr.walkSpeed;
-        rb.linearVelocity = input * currentSpeed;
+        Vector2 move = input * currentSpeed * Time.deltaTime;
+
+        rb.MovePosition(rb.position + move);
     }
+
     
     private void Flip()
     {
