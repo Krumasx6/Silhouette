@@ -1,0 +1,3 @@
+- [x] Update CreateKeyButtons() to use absolute Y positions: first key at currentKeyYOffset (70), second at nextKeyYOffset (10), others at 0
+- [x] Update ResetProgress() to use absolute Y positions: first key at currentKeyYOffset (70), second at nextKeyYOffset (10), others at 0
+- [x] Update UpdateKeyButton() to use absolute Y positions: completed keys at 0, current key at currentKeyYOffset (70), next at nextKeyYOffset (10), pending at 0
