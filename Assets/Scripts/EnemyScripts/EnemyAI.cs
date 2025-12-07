@@ -8,6 +8,7 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float patrolWaitTime = 2f;
     [SerializeField] private float loseTrackTime = 6f;
     [SerializeField] private float stoppingDistance = 0.5f;
+    [SerializeField] private GameObject qtePanel;
 
     private enum EnemyState { Patrolling, Investigating, Chasing, Dead }
     private EnemyState currentState = EnemyState.Patrolling;
@@ -16,6 +17,7 @@ public class EnemyAI : MonoBehaviour
     private EnemyPathing enemyPathing;
     private FieldOfView fieldOfView;
     private NavMeshAgent agent;
+    private Animator animator;
 
     private int currentPatrolIndex = 0;
     private float patrolWaitCounter = 0f;
@@ -29,6 +31,7 @@ public class EnemyAI : MonoBehaviour
         enemyPathing = GetComponent<EnemyPathing>();
         fieldOfView = GetComponent<FieldOfView>();
         agent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
         ea = GetComponent<EnemyAttributes>();
 
         if (agent != null)
@@ -40,9 +43,25 @@ public class EnemyAI : MonoBehaviour
 
     private void Update()
     {
+        // ─── CHECK IF QTE IS ACTIVE (freeze if yes) ───────────────────
+        if (qtePanel != null && qtePanel.activeSelf)
+        {
+            FreezeEnemy();
+            return;
+        }
+
+        // ─── UNFREEZE if dead is false ───────────────────────────────
+        if (!ea.isDead)
+        {
+            UnfreezeEnemy();
+        }
+
         FaceDirection();
 
-        // ─── 1) CHASING has highest priority ───────────────────────────────
+        // ─── UPDATE ALERT STATES (based on detection) ────────────────
+        UpdateAlertStates();
+
+        // ─── 1) CHASING has highest priority ───────────────────────
         if (fieldOfView.visiblePlayer.Count > 0 && ea.sawPlayer)
         {
             playerTarget = fieldOfView.visiblePlayer[0];
@@ -52,11 +71,11 @@ public class EnemyAI : MonoBehaviour
             return;
         }
 
-        // ─── Player lost from sight ─────────────────────────────────────────
+        // ─── Player lost from sight ────────────────────────────────
         if (currentState == EnemyState.Chasing && fieldOfView.visiblePlayer.Count == 0)
             playerTarget = null;
 
-        // ─── 2) Handle active state ─────────────────────────────────────────
+        // ─── 2) Handle active state ───────────────────────────────
         switch (currentState)
         {
             case EnemyState.Patrolling:
@@ -74,6 +93,64 @@ public class EnemyAI : MonoBehaviour
     }
 
     // ───────────────────────────────────────────────────────────────
+    // UPDATE ALERT STATES
+    // ───────────────────────────────────────────────────────────────
+    private void UpdateAlertStates()
+    {
+        // Heard something = Cautious
+        if (ea.heardAnything)
+        {
+            ea.isCautious = true;
+            ea.isAlert = false;
+            ea.unaware = false;
+        }
+        // Saw player = Alert
+        else if (ea.sawPlayer)
+        {
+            ea.isAlert = true;
+            ea.isCautious = false;
+            ea.unaware = false;
+        }
+        // Neither = Unaware
+        else
+        {
+            ea.unaware = true;
+            ea.isCautious = false;
+            ea.isAlert = false;
+        }
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // FREEZE DURING QTE
+    // ───────────────────────────────────────────────────────────────
+    private void FreezeEnemy()
+    {
+        if (agent != null)
+        {
+            agent.velocity = Vector3.zero;
+            agent.enabled = false;
+        }
+
+        if (animator != null)
+        {
+            animator.speed = 0f;
+        }
+    }
+
+    private void UnfreezeEnemy()
+    {
+        if (agent != null && !agent.enabled)
+        {
+            agent.enabled = true;
+        }
+
+        if (animator != null)
+        {
+            animator.speed = 1f;
+        }
+    }
+
+    // ───────────────────────────────────────────────────────────────
     // SET STATE (your booleans update here, nowhere else)
     // ───────────────────────────────────────────────────────────────
     private void SetState(EnemyState newState)
@@ -85,15 +162,12 @@ public class EnemyAI : MonoBehaviour
         ea.isChasing = (newState == EnemyState.Chasing);
         ea.isDead = (newState == EnemyState.Dead);
 
-        ea.beingCautious = (newState == EnemyState.Investigating);
-
         // 🔥 FIX: reset patrol timer when leaving Patrolling
         if (newState != EnemyState.Patrolling)
         {
             patrolWaitCounter = 0f;
         }
     }
-
 
     // ───────────────────────────────────────────────────────────────
     // PATROLLING
@@ -167,6 +241,7 @@ public class EnemyAI : MonoBehaviour
         if (currentState == EnemyState.Chasing)
             return; // ignore sound when already chasing
 
+        ea.heardAnything = true;
         soundInvestigationPoint = soundPos;
         loseTrackCounter = 0f;
 

@@ -49,7 +49,7 @@ public class FieldOfViewMesh : MonoBehaviour
             {
                 meshRenderer.material.color = detectedColor;
             }
-            else if (ea.beingCautious)
+            else if (ea.isCautious)
             {
                 meshRenderer.material.color = cautiousColor;
             }

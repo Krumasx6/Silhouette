@@ -6,7 +6,6 @@ public class SpawningDeadBodies : MonoBehaviour
     [SerializeField] private GameObject deadBodies;
     private Rigidbody2D rb;
     private bool spawnedBodies = false;
-
     private EnemyAttributes ea;
 
     void Start()
@@ -17,12 +16,23 @@ public class SpawningDeadBodies : MonoBehaviour
 
     public IEnumerator SpawnDeadBody()
     {
+        // Prevent multiple spawns
+        if (spawnedBodies)
+        {
+            yield break;
+        }
+
         spawnedBodies = true;
+        
+        // DISABLE ENEMY IMMEDIATELY
         rb.linearVelocity = Vector2.zero;
-        yield return new WaitForSeconds(0.3f);
+        gameObject.SetActive(false);
+        
+        // Spawn dead body instantly
         Instantiate(deadBodies, ea.gameObject.transform.position, Quaternion.identity);
-        ea.gameObject.SetActive(false);
-        yield return new WaitForSeconds(0.2f);
+        
+        // Destroy after a short delay
+        yield return new WaitForSeconds(0.5f);
         Destroy(ea.gameObject);
     }
 }

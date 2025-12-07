@@ -232,7 +232,6 @@ public class QTEManager : MonoBehaviour
                 if (keyImage != null)
                 {
                     keyImage.color = currentColor;
-                    Debug.Log($"Key {i}: Set to WHITE");
                 }
             }
             else if (i == 1)
@@ -241,7 +240,6 @@ public class QTEManager : MonoBehaviour
                 if (keyImage != null)
                 {
                     keyImage.color = pendingColor;
-                    Debug.Log($"Key {i}: Set to GRAY");
                 }
             }
             else
@@ -269,26 +267,20 @@ public class QTEManager : MonoBehaviour
             float originalY = pos.y;
             originalYPositions.Add(originalY);
 
-            Debug.Log($"Key {i} ORIGINAL Y: {originalY}");
-
             if (i == 0)
             {
                 pos.y = currentKeyYOffset;
-                Debug.Log($"Key {i}: Y = {pos.y} (offset {currentKeyYOffset})");
             }
             else if (i == 1)
             {
                 pos.y = nextKeyYOffset;
-                Debug.Log($"Key {i}: Y = {pos.y} (offset {nextKeyYOffset})");
             }
             else
             {
                 pos.y = 0;
-                Debug.Log($"Key {i}: Y = {pos.y} (NO OFFSET)");
             }
 
             rectTransform.anchoredPosition = pos;
-            Debug.Log($"Key {i} FINAL position: {rectTransform.anchoredPosition}");
         }
     }
     private void UpdateKeyButton(int index, bool success)
@@ -367,6 +359,10 @@ public class QTEManager : MonoBehaviour
     
     private IEnumerator CloseQTEAfterDelay(float delay, bool success)
     {
+        // Invoke the event IMMEDIATELY so PlayerKillingMechanics can kill the enemy right away
+        OnQTEComplete?.Invoke(success);
+        
+        // Then do the UI animation/cooldown
         yield return new WaitForSeconds(delay);
         qtePanel.SetActive(false);
         ClearKeyButtons();
@@ -375,8 +371,6 @@ public class QTEManager : MonoBehaviour
         {
             yield return new WaitForSeconds(cooldownAfterSuccess);
         }
-        
-        OnQTEComplete?.Invoke(success);
     }
 }
 

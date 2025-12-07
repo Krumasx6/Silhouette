@@ -8,9 +8,11 @@ public class EnemyAttributes : MonoBehaviour
     [Tooltip("Enemy alert")]
     public bool heardAnything = false;
     public bool sawPlayer = false;
-    public bool beingCautious = false;
-    public bool isChasing = false;
+    public bool isCautious = false;
+    public bool isAlert = false;
+    public bool unaware = true;
     public bool isInvestigating = false;
+    public bool isChasing = false;
 
     // ========== Patrolling ==========
     [Header("Patrolling")]

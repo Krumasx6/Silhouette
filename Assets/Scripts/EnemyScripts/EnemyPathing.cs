@@ -6,6 +6,7 @@ public class EnemyPathing : MonoBehaviour
     private Transform target;
     private Vector3 targetPosition;
     private bool useTransformTarget = true;
+    [SerializeField] private GameObject qtePanel;
     
     NavMeshAgent agent;
 
@@ -19,6 +20,13 @@ public class EnemyPathing : MonoBehaviour
 
     private void Update()
     {
+        // Freeze during QTE
+        if (qtePanel != null && qtePanel.activeSelf)
+        {
+            agent.velocity = Vector3.zero;
+            return;
+        }
+
         if (useTransformTarget && target != null)
         {
             agent.SetDestination(target.position);
